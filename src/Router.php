@@ -70,18 +70,24 @@ final class Router implements RouterInterface
         /**
          * @var Route $route
          */
+        $routeMatchedButMethodNotAllowed = false;
         foreach ($this->routes as $route) {
             if ($route->match($path) === false) {
                 continue;
             }
 
             if (!in_array($method, $route->getMethods())) {
-                throw new MethodNotAllowed(
-                    'Method Not Allowed : ' . $method,
-                    self::METHOD_NOT_ALLOWED
-                );
+                $routeMatchedButMethodNotAllowed = true;
+                continue;
             }
             return $route;
+        }
+
+        if ($routeMatchedButMethodNotAllowed) {
+            throw new MethodNotAllowed(
+                'Method Not Allowed : ' . $method,
+                self::METHOD_NOT_ALLOWED
+            );
         }
 
         throw new RouteNotFound(
