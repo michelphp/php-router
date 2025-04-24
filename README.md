@@ -222,8 +222,6 @@ Example Usage:
 $route = Route::delete('delete_item', '/item/{id}', [ItemController::class, 'delete']);
 ```
 
-With these static methods, defining routes becomes a breeze, providing a smoother and more efficient way to handle routing in your PHP application.
-
 ### Using `where` Constraints in the Route Object
 
 The `Route` object allows you to define constraints on route parameters using the `where` methods. These constraints validate and filter parameter values based on regular expressions. Here's how to use them:
@@ -322,6 +320,194 @@ Example Usage:
 
 ```php
 $route = (new Route('category', '/category/{name}'))->whereAlpha('name');
+```
+
+#### Method `whereTwoSegments()`
+
+This method applies a constraint to match exactly two path segments separated by a slash.
+
+```php
+/**
+ * Sets a constraint for exactly two path segments separated by a slash.
+ *
+ * Example: /{segment1}/{segment2}
+ *
+ * @param mixed ...$parameters The route parameters to apply the constraint to.
+ * @return self The updated Route instance.
+ */
+public function whereTwoSegments(...$parameters): self
+{
+    $this->assignExprToParameters($parameters, '[a-zA-Z0-9\-_]+/[a-zA-Z0-9\-_]+');
+    foreach ($parameters as $parameter) {
+        $this->path = str_replace(sprintf('{%s}', $parameter), sprintf('{%s*}', $parameter), $this->path);
+    }
+    return $this;
+}
+```
+
+Example Usage:
+
+```php
+$route = (new Route('profile', '/profile/{username}/{id}'))->whereTwoSegments('username', 'id');
+```
+
+#### Method `whereAnything()`
+
+This method applies a constraint to match any characters.
+
+```php
+/**
+ * Sets a constraint to match any characters.
+ *
+ * Example: /{anyPath}
+ *
+ * @param mixed ...$parameters The route parameters to apply the constraint to.
+ * @return self The updated Route instance.
+ */
+public function whereAnything(...$parameters): self
+{
+    $this->assignExprToParameters($parameters, '.+');
+    foreach ($parameters as $parameter) {
+        $this->path = str_replace(sprintf('{%s}', $parameter), sprintf('{%s*}', $parameter), $this->path);
+    }
+    return $this;
+}
+```
+
+Example Usage:
+
+```php
+$route = (new Route('any', '/{anyPath}'))->whereAnything('anyPath');
+```
+
+#### Method `whereDate()`
+
+This method applies a date constraint to the specified route parameters, expecting a format `YYYY-MM-DD`.
+
+```php
+/**
+ * Sets a date constraint on the specified route parameters.
+ *
+ * Example: /{date}
+ *
+ * @param mixed ...$parameters The route parameters to apply the constraint to.
+ * @return self The updated Route instance.
+ */
+public function whereDate(...$parameters): self
+{
+    $this->assignExprToParameters($parameters, '\d{4}-\d{2}-\d{2}');
+    return $this;
+}
+```
+
+Example Usage:
+
+```php
+$route = (new Route('date', '/date/{date}'))->whereDate('date');
+```
+
+#### Method `whereYearMonth()`
+
+This method applies a year-month constraint to the specified route parameters, expecting a format `YYYY-MM`.
+
+```php
+/**
+ * Sets a year/month constraint on the specified route parameters.
+ *
+ * Example: /{yearMonth}
+ *
+ * @param mixed ...$parameters The route parameters to apply the constraint to.
+ * @return self The updated Route instance.
+ */
+public function whereYearMonth(...$parameters): self
+{
+        $this->assignExprToParameters($parameters, '\d{4}-\d{2}');
+    return $this;
+}
+```
+
+Example Usage:
+
+```php
+$route = (new Route('yearMonth', '/yearMonth/{yearMonth}'))->whereYearMonth('yearMonth');
+```
+
+#### Method `whereEmail()`
+
+This method applies an email constraint to the specified route parameters.
+
+```php
+/**
+ * Sets an email constraint on the specified route parameters.
+ *
+ * Example: /{email}
+ *
+ * @param mixed ...$parameters The route parameters to apply the constraint to.
+ * @return self The updated Route instance.
+ */
+public function whereEmail(...$parameters): self
+{
+    $this->assignExprToParameters($parameters, '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}');
+    return $this;
+}
+```
+
+Example Usage:
+
+```php
+$route = (new Route('user', '/user/{email}'))->whereEmail('email');
+```
+
+#### Method `whereUuid()`
+
+This method applies a UUID constraint to the specified route parameters.
+
+```php
+/**
+ * Sets a UUID constraint on the specified route parameters.
+ *
+ * Example: /{uuid}
+ *
+ * @param mixed ...$parameters The route parameters to apply the constraint to.
+ * @return self The updated Route instance.
+ */
+public function whereUuid(...$parameters): self
+{
+    $this->assignExprToParameters($parameters, '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}');
+    return $this;
+}
+```
+
+Example Usage:
+
+```php
+$route = (new Route('profile', '/profile/{uuid}'))->whereUuid('uuid');
+```
+
+#### Method `whereBool()`
+
+This method applies a boolean constraint to the specified route parameters, accepting `true`, `false`, `1`, and `0`.
+
+```php
+/**
+ * Sets a boolean constraint on the specified route parameters.
+ *
+ * Example: /{isActive}
+ *
+ * @param mixed ...$parameters The route parameters to apply the constraint to.
+ * @return self The updated Route instance.
+ */
+public function whereBool(...$parameters): self
+{
+    $this->assignExprToParameters($parameters, 'true|false|1|0');
+    return $this;
+}
+```
+
+Example Usage:
+
+```php
+$route = (new Route('status', '/status/{isActive}'))->whereBool('isActive');
 ```
 
 #### Method `where()`

@@ -79,9 +79,20 @@ final class Route
     public function match(string $path): bool
     {
         $regex = $this->getPath();
+        // This loop replaces all route variables like {var} or {var*} with corresponding regex patterns.
+        // If the variable name ends with '*', it means the value can contain slashes (e.g. /foo/bar).
+        // In that case, we use a permissive regex: (?P<varName>.+) — matches everything including slashes.
+        // Otherwise, we use a strict regex: (?P<varName>[^/]++), which excludes slashes for standard segments.
+        // The possessive quantifier '++' is used for better performance (avoids unnecessary backtracking).
         foreach ($this->getVarsNames() as $variable) {
             $varName = trim($variable, '{\}');
-            $regex = str_replace($variable, '(?P<' . $varName . '>[^/]++)', $regex);
+            $end = '*';
+            if ((@substr_compare($varName, $end, -strlen($end)) == 0)) {
+                $varName = rtrim($varName, $end);
+                $regex = str_replace($variable, '(?P<' . $varName . '>.+)', $regex); // allows slashes
+                continue;
+            }
+            $regex = str_replace($variable, '(?P<' . $varName . '>[^/]++)', $regex); // faster, excludes slashes
         }
 
         if (!preg_match('#^' . $regex . '$#sD', Helper::trimPath($path), $matches)) {
@@ -93,8 +104,13 @@ final class Route
         }, ARRAY_FILTER_USE_KEY);
 
         foreach ($values as $key => $value) {
-            if (array_key_exists($key, $this->wheres) && !preg_match('/^'.$this->wheres[$key].'$/', $value)) {
-                return false;
+            if (array_key_exists($key, $this->wheres)) {
+                $pattern = $this->wheres[$key];
+                $delimiter = '#';
+                $regex = $delimiter . '^' . $pattern . '$' . $delimiter;
+                if (!preg_match($regex, $value)) {
+                    return false;
+                }
             }
             $this->attributes[$key] = $value;
         }
@@ -201,6 +217,52 @@ final class Route
     public function whereAlpha(...$parameters): self
     {
         $this->assignExprToParameters($parameters, '[a-zA-Z]+');
+        return $this;
+    }
+
+    public function whereTwoSegments(...$parameters): self
+    {
+        $this->assignExprToParameters($parameters, '[a-zA-Z0-9\-_]+/[a-zA-Z0-9\-_]+');
+        foreach ($parameters as $parameter) {
+            $this->path = str_replace(sprintf('{%s}', $parameter), sprintf('{%s*}', $parameter), $this->path);
+        }
+        return $this;
+    }
+
+    public function whereAnything(string $parameter): self
+    {
+        $this->assignExprToParameters([$parameter], '.+');
+        $this->path = str_replace(sprintf('{%s}', $parameter), sprintf('{%s*}', $parameter), $this->path);
+        return $this;
+    }
+
+    public function whereDate(...$parameters): self
+    {
+        $this->assignExprToParameters($parameters, '\d{4}-\d{2}-\d{2}');
+        return $this;
+    }
+
+    public function whereYearMonth(...$parameters): self
+    {
+        $this->assignExprToParameters($parameters, '\d{4}-\d{2}');
+        return $this;
+    }
+
+    public function whereEmail(...$parameters): self
+    {
+        $this->assignExprToParameters($parameters, '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}');
+        return $this;
+    }
+
+    public function whereUuid(...$parameters): self
+    {
+        $this->assignExprToParameters($parameters, '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}');
+        return $this;
+    }
+
+    public function whereBool(...$parameters): self
+    {
+        $this->assignExprToParameters($parameters, 'true|false|1|0');
         return $this;
     }
 
