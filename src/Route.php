@@ -41,6 +41,8 @@ final class Route
      */
     private array $wheres = [];
 
+    private ?string $format = null;
+
     /**
      * Constructor for the Route class.
      *
@@ -172,6 +174,11 @@ final class Route
         return $this->attributes;
     }
 
+    public function getFormat(): ?string
+    {
+        return $this->format;
+    }
+
     /**
      * Sets a number constraint on the specified route parameters.
      *
@@ -279,10 +286,37 @@ final class Route
         return $this;
     }
 
+    public function format(?string $format): self
+    {
+        $allowedFormats = ['json', 'xml', 'html', null];
+        if (!in_array($format, $allowedFormats)) {
+            throw new \InvalidArgumentException("Invalid format. Allowed formats: " . implode(', ', $allowedFormats));
+        }
+        $this->format = $format;
+        return $this;
+    }
+
     private function assignExprToParameters(array $parameters, string $expression): void
     {
         foreach ($parameters as $parameter) {
             $this->where($parameter, $expression);
         }
     }
+
+    public static function __set_state(array $state): self
+    {
+        $route = new self(
+            $state['name'],
+            $state['path'],
+            $state['handler'],
+            $state['methods']
+        );
+        $route->format($state['format'] ?? null);
+        foreach ($state['wheres'] as $parameter => $expression) {
+            $route->where($parameter, $expression);
+        }
+        return $route;
+    }
 }
+
+

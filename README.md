@@ -1,13 +1,15 @@
-# PHP Router 
+# PHP Router
 
-PHP Router is a simple and efficient routing library designed for PHP applications. It provides a straightforward way to define routes, handle HTTP requests, and generate URLs. Built with PSR-7 message implementation in mind, it seamlessly integrates with PHP applications.
-
+PHP Router is a simple and efficient routing library designed for PHP applications. It provides a straightforward way to
+define routes, handle HTTP requests, and generate URLs. Built with PSR-7 message implementation in mind, it seamlessly
+integrates with PHP applications.
 
 ## Installation
 
 You can install PHP Router via Composer. Just run:
 
 ### Composer Require
+
 ```
 composer require phpdevcommunity/php-router
 ```
@@ -30,12 +32,14 @@ composer require phpdevcommunity/php-router
 
 5. **Generate URLs**: Generate URLs for named routes.
 
-
 ## Example
+
 ```php
 <?php
 class IndexController {
 
+    // PHP > 8.0
+    #[\PhpDevCommunity\Attribute\Route(path: '/', name: 'home_page')]
     public function __invoke()
     {
         return 'Hello world!!';
@@ -43,7 +47,8 @@ class IndexController {
 }
 
 class ArticleController {
-
+   // PHP > 8.0
+    #[\PhpDevCommunity\Attribute\Route(path: '/api/articles', name: 'api_articles_collection')]
     public function getAll()
     {
         // db get all post
@@ -53,7 +58,8 @@ class ArticleController {
             ['id' => 3]
         ]);
     }
-
+    // PHP > 8.0
+    #[\PhpDevCommunity\Attribute\Route(path: '/api/articles/{id}', name: 'api_articles')]
     public function get(int $id)
     {
         // db get post by id
@@ -76,11 +82,20 @@ class ArticleController {
 
 ```php
 // Define your routes
-$routes = [
-    new \PhpDevCommunity\Route('home_page', '/', [IndexController::class]),
-    new \PhpDevCommunity\Route('api_articles_collection', '/api/articles', [ArticleController::class, 'getAll']),
-    new \PhpDevCommunity\Route('api_articles', '/api/articles/{id}', [ArticleController::class, 'get']),
-];
+
+if (PHP_VERSION_ID >= 80000) {
+    $attributeRouteCollector = new AttributeRouteCollector([
+        IndexController::class,
+        ArticleController::class
+    ]);
+    $routes = $attributeRouteCollector->collect();
+}else {
+    $routes = [
+        new \PhpDevCommunity\Route('home_page', '/', [IndexController::class]),
+        new \PhpDevCommunity\Route('api_articles_collection', '/api/articles', [ArticleController::class, 'getAll']),
+        new \PhpDevCommunity\Route('api_articles', '/api/articles/{id}', [ArticleController::class, 'get']),
+    ];
+}
 
 // Initialize the router
 $router = new \PhpDevCommunity\Router($routes, 'http://localhost');
@@ -120,15 +135,18 @@ try {
 
 ## Route Definition
 
-Routes can be defined using the `Route` class provided by PHP Router. You can specify HTTP methods, attribute constraints, and handler methods for each route.
+Routes can be defined using the `Route` class provided by PHP Router. You can specify HTTP methods, attribute
+constraints, and handler methods for each route.
 
 ```php
 $route = new \PhpDevCommunity\Route('api_articles_post', '/api/articles', [ArticleController::class, 'post'], ['POST']);
 $route = new \PhpDevCommunity\Route('api_articles_put', '/api/articles/{id}', [ArticleController::class, 'put'], ['PUT']);
 ```
+
 ### Easier Route Definition with Static Methods
 
-To make route definition even simpler and more intuitive, the `RouteTrait` provides static methods for creating different types of HTTP routes. Here's how to use them:
+To make route definition even simpler and more intuitive, the `RouteTrait` provides static methods for creating
+different types of HTTP routes. Here's how to use them:
 
 #### Method `get()`
 
@@ -224,7 +242,8 @@ $route = Route::delete('delete_item', '/item/{id}', [ItemController::class, 'del
 
 ### Using `where` Constraints in the Route Object
 
-The `Route` object allows you to define constraints on route parameters using the `where` methods. These constraints validate and filter parameter values based on regular expressions. Here's how to use them:
+The `Route` object allows you to define constraints on route parameters using the `where` methods. These constraints
+validate and filter parameter values based on regular expressions. Here's how to use them:
 
 #### Method `whereNumber()`
 
@@ -535,7 +554,8 @@ Example Usage:
 $route = (new Route('product', '/product/{code}'))->where('code', '\d{4}');
 ```
 
-By using these `where` methods, you can apply precise constraints on your route parameters, ensuring proper validation of input values.
+By using these `where` methods, you can apply precise constraints on your route parameters, ensuring proper validation
+of input values.
 
 ## Generating URLs
 
@@ -546,6 +566,7 @@ echo $router->generateUri('home_page'); // /
 echo $router->generateUri('api_articles', ['id' => 1]); // /api/articles/1
 echo $router->generateUri('api_articles', ['id' => 1], true); // http://localhost/api/articles/1
 ```
+
 ## Contributing
 
 Contributions are welcome! Feel free to open issues or submit pull requests to help improve the library.

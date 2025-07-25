@@ -70,6 +70,9 @@ final class UrlGenerator
                     sprintf('%s not found in parameters to generate url', $varName)
                 );
             }
+            if (!is_array($parameters[$varName])) {
+                $parameters[$varName] = strval($parameters[$varName]);
+            }
             $uri = str_replace($variable, $parameters[$varName], $uri);
         }
         return $uri;
