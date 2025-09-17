@@ -2,7 +2,11 @@
 
 namespace PhpDevCommunity\Attribute;
 
-use PhpDevCommunity\Helper;
+use InvalidArgumentException;
+use LogicException;
+use ReflectionAttribute;
+use ReflectionClass;
+use ReflectionException;
 
 final class AttributeRouteCollector
 {
@@ -12,12 +16,12 @@ final class AttributeRouteCollector
     public function __construct(array $classes, ?string $cacheDir = null)
     {
         if (PHP_VERSION_ID < 80000) {
-            throw new \LogicException('Attribute routes are only supported in PHP 8.0+');
+            throw new LogicException('Attribute routes are only supported in PHP 8.0+');
         }
         $this->classes = array_unique($classes);
         $this->cacheDir = $cacheDir;
         if ($this->cacheDir && !is_dir($this->cacheDir)) {
-            throw  new \InvalidArgumentException(sprintf(
+            throw  new InvalidArgumentException(sprintf(
                 'Cache directory "%s" does not exist',
                 $this->cacheDir
             ));
@@ -27,7 +31,7 @@ final class AttributeRouteCollector
     public function generateCache(): void
     {
         if (!$this->cacheIsEnabled()) {
-            throw new \LogicException('Cache is not enabled, if you want to enable it, please set the cacheDir on the constructor');
+            throw new LogicException('Cache is not enabled, if you want to enable it, please set the cacheDir on the constructor');
         }
         $this->collect();
     }
@@ -35,7 +39,7 @@ final class AttributeRouteCollector
     public function clearCache(): void
     {
         if (!$this->cacheIsEnabled()) {
-            throw new \LogicException('Cache is not enabled, if you want to enable it, please set the cacheDir on the constructor');
+            throw new LogicException('Cache is not enabled, if you want to enable it, please set the cacheDir on the constructor');
         }
 
         foreach ($this->classes as $class) {
@@ -48,7 +52,7 @@ final class AttributeRouteCollector
 
     /**
      * @return array<\PhpDevCommunity\Route
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     public function collect(): array
     {
@@ -62,21 +66,21 @@ final class AttributeRouteCollector
 
     private function getRoutes(string $class): array
     {
-        if ($this->cacheIsEnabled() && (  $cached = $this->get($class))) {
+        if ($this->cacheIsEnabled() && ($cached = $this->get($class))) {
             return $cached;
         }
-        $refClass  = new \ReflectionClass($class);
+        $refClass = new ReflectionClass($class);
         $routes = [];
 
         $controllerAttr = $refClass->getAttributes(
             ControllerRoute::class,
-            \ReflectionAttribute::IS_INSTANCEOF
+            ReflectionAttribute::IS_INSTANCEOF
         )[0] ?? null;
         $controllerRoute = $controllerAttr ? $controllerAttr->newInstance() : new ControllerRoute('');
         foreach ($refClass->getMethods() as $method) {
             foreach ($method->getAttributes(
                 Route::class,
-                \ReflectionAttribute::IS_INSTANCEOF
+                ReflectionAttribute::IS_INSTANCEOF
             ) as $attr) {
                 /**
                  * @var Route $instance
@@ -84,7 +88,7 @@ final class AttributeRouteCollector
                 $instance = $attr->newInstance();
                 $route = new \PhpDevCommunity\Route(
                     $instance->getName(),
-                    $controllerRoute->getPath().$instance->getPath(),
+                    $controllerRoute->getPath() . $instance->getPath(),
                     [$class, $method->getName()],
                     $instance->getMethods()
                 );
@@ -92,7 +96,7 @@ final class AttributeRouteCollector
                 $route->format($instance->getFormat() ?: $controllerRoute->getFormat());
                 foreach ($instance->getOptions() as $key => $value) {
                     if (!str_starts_with($key, 'where') || $key === 'where') {
-                        throw new \InvalidArgumentException(
+                        throw new InvalidArgumentException(
                             'Invalid option "' . $key . '". Options must start with "where".'
                         );
                     }
@@ -138,6 +142,6 @@ final class AttributeRouteCollector
 
     private function getCacheFile(string $class): string
     {
-        return $this->cacheDir . '/' .md5($class) . '.php';
+        return rtrim($this->cacheDir, '/') . '/' . md5($class) . '.php';
     }
 }
