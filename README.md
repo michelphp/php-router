@@ -1,3 +1,8 @@
+> ⚠️ **Abandoned package**
+>
+> This package is abandoned and no longer maintained.  
+> The author suggests using **[michel/router](https://github.com/michelphp/router)** instead.
+> 
 # PHP Router
 
 PHP Router is a simple and efficient routing library designed for PHP applications. It provides a straightforward way to
